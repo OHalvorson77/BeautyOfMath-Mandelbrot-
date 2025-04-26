@@ -1,4 +1,3 @@
-#Beauty of Math 
 Welcome to Beauty of Math Project!
 
 Personal Project
