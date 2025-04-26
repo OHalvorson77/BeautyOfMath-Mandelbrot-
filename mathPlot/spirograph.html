@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spiroverse</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0e0e0e;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      border: 1px solid #444;
+      margin-top: 1rem;
+      background: #111;
+    }
+    .controls {
+      margin-top: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .control {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    label {
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Spiroverse</h1>
+  <div class="controls">
+    <div class="control"><label>R: <span id="rBigVal">150</span></label><input type="range" id="rBig" min="50" max="300" value="150"></div>
+    <div class="control"><label>r: <span id="rSmallVal">60</span></label><input type="range" id="rSmall" min="10" max="150" value="60"></div>
+    <div class="control"><label>d: <span id="dVal">90</span></label><input type="range" id="d" min="10" max="150" value="90"></div>
+    <div class="control"><label>Speed: <span id="speedVal">0.01</span></label><input type="range" id="speed" min="0.001" max="0.05" step="0.001" value="0.01"></div>
+  </div>
+  <canvas id="spiro" width="800" height="800"></canvas>
+
+  <script>
+    const canvas = document.getElementById("spiro");
+    const ctx = canvas.getContext("2d");
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+
+    const rBig = document.getElementById("rBig");
+    const rSmall = document.getElementById("rSmall");
+    const d = document.getElementById("d");
+    const speed = document.getElementById("speed");
+
+    const rBigVal = document.getElementById("rBigVal");
+    const rSmallVal = document.getElementById("rSmallVal");
+    const dVal = document.getElementById("dVal");
+    const speedVal = document.getElementById("speedVal");
+
+    const updateLabels = () => {
+      rBigVal.textContent = rBig.value;
+      rSmallVal.textContent = rSmall.value;
+      dVal.textContent = d.value;
+      speedVal.textContent = speed.value;
+    }
+
+    let t = 0;
+    let hue = 0;
+
+    function draw() {
+      const R = parseFloat(rBig.value);
+      const r = parseFloat(rSmall.value);
+      const dist = parseFloat(d.value);
+      const step = parseFloat(speed.value);
+
+      const x = (R - r) * Math.cos(t) + dist * Math.cos(((R - r) / r) * t);
+      const y = (R - r) * Math.sin(t) - dist * Math.sin(((R - r) / r) * t);
+
+      ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+      ctx.fillRect(x, y, 1.5, 1.5);
+
+      t += step;
+      hue = (hue + 1) % 360;
+
+      requestAnimationFrame(draw);
+    }
+
+    [rBig, rSmall, d, speed].forEach(input => {
+      input.addEventListener('input', () => {
+        updateLabels();
+        ctx.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+        t = 0;
+        hue = 0;
+      });
+    });
+
+    updateLabels();
+    draw();
+  </script>
+</body>
+</html>

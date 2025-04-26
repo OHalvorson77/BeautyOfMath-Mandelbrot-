@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mandelbrot Explorer</title>
+  <style>
+    body { background: #222; color: white; font-family: sans-serif; text-align: center; }
+    canvas { border: 1px solid #555; display: block; margin: 0 auto; }
+    .controls { margin-top: 10px; }
+    label { margin: 0 10px; }
+  </style>
+</head>
+<body onload="init()">
+
+<h2>Mandelbrot Explorer</h2>
+<canvas id="plot" width="800" height="800"></canvas>
+
+<div class="controls">
+  <label>
+    Max Iterations:
+    <input type="range" id="iterSlider" min="10" max="100" value="25" step="1" oninput="updateUI()">
+    <span id="iterValue">25</span>
+  </label>
+  <label>
+    Color Inside:
+    <select id="insideColor" onchange="plotMandelbrot()">
+      <option value="black">Black</option>
+      <option value="darkblue">Dark Blue</option>
+      <option value="darkgreen">Dark Green</option>
+    </select>
+  </label>
+  <label>
+    Color Outside:
+    <select id="outsideColor" onchange="plotMandelbrot()">
+      <option value="white">White</option>
+      <option value="red">Red</option>
+      <option value="yellow">Yellow</option>
+      <option value="cyan">Cyan</option>
+    </select>
+  </label>
+</div>
+
+<script>
+  let plotWidth = 0;
+  let plotHeight = 0;
+  let ctx = null;
+  
+let mouseX = 0, mouseY = 0;
+let mouseHoverEnabled = true;
+const iterationColors = {
+  3: "red",
+  4: "lightyellow",
+  5: "gold",
+  6: "orange",
+  7: "darkorange",
+  8: "orangered",
+  9: "tomato",
+  10: "salmon",
+  11: "lightsalmon",
+  12: "coral",
+  13: "lightcoral",
+  14: "indianred",
+  15: "firebrick",
+  16: "red",
+  17: "crimson",
+  18: "darkred",
+  19: "maroon",
+  20: "blue",
+  21: "blue",
+  22: "blue",
+  23: "green",
+  24: "green"
+};
+
+
+  const iLower = -1.0;
+  const iUpper = 1.0;
+  const realLower = -1.5;
+  const realUpper = 0.5;
+
+  let iScale, realScale;
+
+  document.getElementById("plot").addEventListener("mousemove", e => {
+  const rect = e.target.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+  mouseY = e.clientY - rect.top;
+  drawWithMouseHover(); // redraw on hover
+});
+
+
+function drawWithMouseHover() {
+  plotMandelbrot();
+
+  if (!mouseHoverEnabled) return;
+
+
+  const realCoord = realLower + mouseX * realScale;
+  const iCoord = iUpper - mouseY * iScale;
+
+  let z = [0, 0];
+  const c = [realCoord, iCoord];
+  const maxIter = parseInt(document.getElementById("iterSlider").value);
+
+  let path = [[z[0], z[1]]];
+  for (let i = 0; i < maxIter; i++) {
+    z = solve(z[0], z[1], c[0], c[1]);
+    if (z[0] * z[0] + z[1] * z[1] > 4) break;
+    
+    path.push([z[0], z[1]]);
+    
+  }
+
+  drawPath(path, "white");
+}
+
+function drawPath(path, color) {
+  ctx.strokeStyle = color;
+  ctx.beginPath();
+  for (let i = 0; i < path.length - 1; i++) {
+    const [x1, y1] = toCanvasCoords(path[i][0], path[i][1]);
+    const [x2, y2] = toCanvasCoords(path[i + 1][0], path[i + 1][1]);
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+  }
+  ctx.stroke();
+}
+
+function toCanvasCoords(real, imag) {
+  const x = (real - realLower) / realScale;
+  const y = (iUpper - imag) / iScale;
+  return [x, y];
+}
+
+  function init() {
+    const canvas = document.getElementById("plot");
+    plotWidth = canvas.width;
+    plotHeight = canvas.height;
+    ctx = canvas.getContext("2d");
+
+    iScale = Math.abs(iLower - iUpper) / plotHeight;
+    realScale = Math.abs(realLower - realUpper) / plotWidth;
+
+    plotMandelbrot();
+  }
+
+  function plotPoint(x, y, clr) {
+    ctx.fillStyle = clr;
+    ctx.fillRect(x, y, 1, 1);
+  }
+
+  function solve(real0, i0, real1, i1) {
+    const realPart = real0 * real0 - i0 * i0 + real1;
+    const imagPart = 2 * real0 * i0 + i1;
+    return [realPart, imagPart];
+  }
+
+  function updateUI() {
+    const iter = document.getElementById("iterSlider").value;
+    document.getElementById("iterValue").innerText = iter;
+    plotMandelbrot();
+  }
+
+
+  function getColorByIteration(its) {
+  if (its in iterationColors) {
+    return iterationColors[its];
+  }
+
+  return "red";
+}
+
+  
+
+  function plotMandelbrot() {
+    const maxIter = parseInt(document.getElementById("iterSlider").value);
+    const inside = document.getElementById("insideColor").value;
+    const outside = document.getElementById("outsideColor").value;
+
+    for (let x = 0; x < plotWidth; x++) {
+      for (let y = 0; y < plotHeight; y++) {
+        const iCoord = iUpper - y * iScale;
+        const realCoord = realLower + x * realScale;
+
+        let z = [0, 0];
+        let its = 0;
+        let outsideSet = false;
+
+        do {
+          z = solve(z[0], z[1], realCoord, iCoord);
+          const mag = Math.sqrt(z[0] * z[0] + z[1] * z[1]);
+          if (mag > 2) outsideSet = true;
+          its++;
+        } while (its < maxIter && !outsideSet);
+
+        let color;
+        if (outsideSet) {
+        
+          const intensity = 255 - (its / maxIter) * 255;
+          color = getColorByIteration(its);
+        } else {
+          color = inside;
+        }
+
+        plotPoint(x, y, color);
+      }
+    }
+  }
+</script>
+
+</body>
+</html>
